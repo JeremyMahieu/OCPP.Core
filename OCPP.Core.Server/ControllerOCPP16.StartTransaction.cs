@@ -47,6 +47,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
                 string idTag = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
+                ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
                 connectorId = startTransactionRequest.ConnectorId;
 
                 startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
@@ -62,7 +63,7 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                        
                         if (ct != null)
                         {
                             if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
@@ -83,7 +84,7 @@ namespace OCPP.Core.Server
                                 {
                                     // Check that no open transaction with this idTag exists
                                     var existsTx = await DbContext.Transactions
-                                        .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
+                                        .Where(t => !t.StopTime.HasValue && t.StartTag == ct)
                                         .OrderByDescending(t => t.TransactionId)
                                         .AnyAsync();
 
@@ -121,7 +122,7 @@ namespace OCPP.Core.Server
                         Transaction transaction = new Transaction();
                         transaction.ChargePointId = ChargePointStatus?.Id;
                         transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                        transaction.StartTagId = idTag;
+                        transaction.StartTag = ct;
                         transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
                         transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
                         transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
