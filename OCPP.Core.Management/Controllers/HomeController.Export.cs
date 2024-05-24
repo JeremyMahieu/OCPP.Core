@@ -107,8 +107,7 @@ namespace OCPP.Core.Management.Controllers
                 .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";
 
             Logger.LogTrace("Export: Loading charge tags...");
-            var chargeTags = DbContext.ChargeTags.ToList();
-            tlvm.ChargeTags = chargeTags.ToDictionary(tag => tag.TagId);
+            tlvm.ChargeTags = DbContext.ChargeTags.ToList();
 
             if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
             {
@@ -144,23 +143,12 @@ namespace OCPP.Core.Management.Controllers
                 int row = 2;
                 foreach (var t in tlvm.Transactions)
                 {
-                    string startTag = t.StartTagId;
-                    string stopTag = t.StopTagId;
-                    if (!string.IsNullOrEmpty(t.StartTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StartTagId))
-                    {
-                        startTag = tlvm.ChargeTags[t.StartTagId]?.TagName;
-                    }
-                    if (!string.IsNullOrEmpty(t.StopTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StopTagId))
-                    {
-                        stopTag = tlvm.ChargeTags[t.StopTagId]?.TagName;
-                    }
-
                     worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
                     worksheet.Cell(row, 2).Value = t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
-                    worksheet.Cell(row, 3).Value = startTag;
+                    worksheet.Cell(row, 3).Value = t.StartTag.ToString();
                     worksheet.Cell(row, 4).Value = $"{t.MeterStart:0.0##}";
                     worksheet.Cell(row, 5).Value = t.StopTime?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty;
-                    worksheet.Cell(row, 6).Value = stopTag;
+                    worksheet.Cell(row, 6).Value = t.StopTag?.ToString();
                     worksheet.Cell(row, 7).Value = t.MeterStop.HasValue ? $"{t.MeterStop:0.0##}" : string.Empty;
                     worksheet.Cell(row, 8).Value = t.MeterStop.HasValue ? $"{t.MeterStop - t.MeterStart:0.0##}" : string.Empty;
 
